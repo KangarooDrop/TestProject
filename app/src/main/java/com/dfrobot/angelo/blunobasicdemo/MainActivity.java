@@ -24,13 +24,23 @@ import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity  extends BlunoLibrary {
 	private Button buttonScan;
+	private Button buttonSave;
+	private Button buttonLoad;
+	private Button buttonPause;
+	private boolean paused = false;
 
+	private DrawView dv;
 	private GraphView graph;
 	private LineGraphSeries<DataPoint> graphSeries;
 	private ArrayList<DataPoint> allGraphSeries;
@@ -80,6 +90,59 @@ public class MainActivity  extends BlunoLibrary {
 			}
 		});
 
+		buttonSave = (Button)findViewById(R.id.buttonSave);
+		buttonSave.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view)
+			{
+				ArrayList<String> strArr = new ArrayList<String>();
+				double lastTime = 0;
+				for(DataPoint p : allGraphSeries) {
+					strArr.add("t: " + (p.getX() - lastTime) + " p: " + p.getY());
+					lastTime = p.getX();
+				}
+				writeToDataFile(strArr);
+			}
+		});
+
+		buttonLoad = findViewById(R.id.buttonLoad);
+		buttonLoad.setOnClickListener(new View.OnClickListener()
+		{
+			@Override
+			public void onClick(View view)
+			{
+				resetGraph();
+
+				ArrayList<String> inputBuffer = readFromDataFile();
+				for(int i = 0; i < inputBuffer.size(); i++)
+				{
+					List<String> lineData = Arrays.asList(inputBuffer.get(i).split(" "));
+					if (lineData.size() >= 4) {
+						int timeStepIndex = lineData.indexOf("t:") + 1;
+						int pressureIndex = lineData.indexOf("p") + 1;
+						if (timeStepIndex != 0 && pressureIndex != 0) {
+							double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
+							double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
+							DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
+							graphSeries.appendData(receivedPoint, true, numOfPoints);
+							allGraphSeries.add(receivedPoint);
+						}
+					}
+				}
+				paused = true;
+				updatePauseButtonText();
+			}
+		});
+
+		buttonPause = (Button) findViewById(R.id.buttonPause);
+		buttonPause.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				paused = !paused;
+				updatePauseButtonText();
+			}
+		});
+
 		graph = (GraphView)findViewById(R.id.graph);
 		graphSeries = new LineGraphSeries<DataPoint>();
 		allGraphSeries = new ArrayList<>();
@@ -87,6 +150,20 @@ public class MainActivity  extends BlunoLibrary {
 		graph.getViewport().setXAxisBoundsManual(true);
 		graph.getViewport().setMinX(0);
 		graph.getViewport().setMaxX(numOfPoints * .2);
+
+		dv = (DrawView)findViewById(R.id.drawview);
+	}
+
+	private void resetGraph()
+	{
+		graphXValue = 0;
+		allGraphSeries.clear();
+		graphSeries.resetData(new DataPoint[] {});
+	}
+
+	private void updatePauseButtonText()
+	{
+		buttonPause.setText(paused ? "Play" : "Pause");
 	}
 
 	@Override
@@ -149,30 +226,80 @@ public class MainActivity  extends BlunoLibrary {
 	@Override
 	public void onSerialReceived(String line)
 	{
+		if (!paused) {
+			try {
+				if (line.contains("t")) {
+					List<String> lineData = Arrays.asList(wholeLine.split(" "));
+					if (lineData.size() >= 4) {
+						int timeStepIndex = lineData.indexOf("t:") + 1;
+						int pressureIndex = lineData.indexOf("p") + 1;
+						int gyroIndex = lineData.indexOf("a:") + 1;
+						if (timeStepIndex != 0) {
+							if (pressureIndex != 0)
+							{
+								double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
+								double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
+								DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
+								graphSeries.appendData(receivedPoint, true, numOfPoints);
+								allGraphSeries.add(receivedPoint);
+								graphXValue += deltaTime;
+							}
+							if (gyroIndex != 0 && gyroIndex + 2 < lineData.size())
+							{
+								double pitch = Double.parseDouble(lineData.get(gyroIndex)),
+										yaw = Double.parseDouble(lineData.get(gyroIndex + 2)),
+										roll = Double.parseDouble(lineData.get(gyroIndex + 1));
+								dv.translate(pitch, yaw);
+								dv.invalidate();
+							}
+						}
+					}
+					wholeLine = "";
+				}
+				wholeLine += line;
+			} catch (NumberFormatException e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	private void writeToDataFile(ArrayList<String> data)
+	{
 		try
 		{
-			if (line.contains("t")) {
-				List<String> lineData = Arrays.asList(wholeLine.split(" "));
-				if (lineData.size() >= 4) {
-					int timeStepIndex = lineData.indexOf("t:") + 1;
-					int pressureIndex = lineData.indexOf("p") + 1;
-					if (timeStepIndex != 0 && pressureIndex != 0) {
-						Log.w("Got here", "Got here");
-						double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
-						double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
-						DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
-						graphSeries.appendData(receivedPoint, true, numOfPoints);
-						allGraphSeries.add(receivedPoint);
-						graphXValue += deltaTime;
-					}
-				}
-				wholeLine = "";
-			}
-			wholeLine += line;
+			FileOutputStream fos = openFileOutput("data_log.txt", MODE_PRIVATE);
+			for(int i = 0; i < data.size(); i++)
+				fos.write((data.get(i) + "\n").getBytes());
+			fos.close();
+			Log.w("Writing", "Writing to data log file");
 		}
-		catch (NumberFormatException e)
+		catch (IOException e)
 		{
+			Log.w("Exception", "Error writing to file: " + e.toString());
 			e.printStackTrace();
 		}
+	}
+
+	private ArrayList<String> readFromDataFile()
+	{
+		try
+		{
+			FileInputStream fis = openFileInput("data_log.txt");
+			InputStreamReader isr = new InputStreamReader(fis);
+			BufferedReader br = new BufferedReader(isr);
+			ArrayList<String> logData = new ArrayList<>();
+			String line;
+			while((line = br.readLine()) != null)
+				logData.add(line);
+			fis.close();
+			Log.w("Writing", "Reading from data log file");
+			return logData;
+		}
+		catch (IOException e)
+		{
+			Log.w("Exception", "Error reading from file");
+			e.printStackTrace();
+		}
+		return new ArrayList<>();
 	}
 }

@@ -28,8 +28,38 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="51dp"
-        android:layout_marginTop="45dp"
+        android:layout_marginTop="60dp"
         android:text="Scan" />
+
+    <Button
+        android:id="@+id/buttonSave"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="51dp"
+        android:layout_marginTop="630dp"
+        android:text="Save" />
+
+    <Button
+        android:id="@+id/buttonLoad"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="151dp"
+        android:layout_marginTop="630dp"
+        android:text="Load" />
+
+    <Button
+        android:id="@+id/buttonPause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="251dp"
+        android:layout_marginTop="630dp"
+        android:text="Pause" />
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
@@ -42,5 +72,15 @@
         android:layout_marginTop="221dp"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="-572dp" />
+
+    <com.dfrobot.angelo.blunobasicdemo.DrawView
+        android:id="@+id/drawview"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="250dp"
+        android:layout_marginTop="30dp" />
 
 </RelativeLayout>
