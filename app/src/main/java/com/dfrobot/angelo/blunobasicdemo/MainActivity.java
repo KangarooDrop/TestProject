@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.Viewport;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -46,7 +47,9 @@ public class MainActivity  extends BlunoLibrary {
 	private LineGraphSeries<DataPoint> graphSeries;
 	private ArrayList<DataPoint> allGraphSeries;
 	private double graphXValue = 0;
-	private int numOfPoints = 40;
+	private int numOfPoints = 511;
+
+	private boolean scrollToEndOfGraph = true;
 
 	private static final int PERMISSION_REQUEST_COARSE_LOCATION = 456;
 
@@ -159,7 +162,15 @@ public class MainActivity  extends BlunoLibrary {
 		graph.addSeries(graphSeries);
 		graph.getViewport().setXAxisBoundsManual(true);
 		graph.getViewport().setMinX(0);
-		graph.getViewport().setMaxX(numOfPoints * .2);
+		graph.getViewport().setMaxX(5);
+
+        graph.getViewport().setScrollable(true);
+        graph.getViewport().setOnXAxisBoundsChangedListener(new Viewport.OnXAxisBoundsChangedListener() {
+            @Override
+            public void onXAxisBoundsChanged(double minX, double maxX, Reason reason) {
+                scrollToEndOfGraph = maxX >= graphXValue - 0.2;
+            }
+        });
 
 		dv = (DrawView)findViewById(R.id.drawview);
 	}
@@ -250,7 +261,7 @@ public class MainActivity  extends BlunoLibrary {
 								double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
 								double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
 								DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
-								graphSeries.appendData(receivedPoint, true, numOfPoints);
+								graphSeries.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
 								allGraphSeries.add(receivedPoint);
 								graphXValue += deltaTime;
 							}
