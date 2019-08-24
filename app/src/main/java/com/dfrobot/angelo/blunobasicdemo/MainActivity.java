@@ -38,6 +38,7 @@ public class MainActivity  extends BlunoLibrary {
 	private Button buttonSave;
 	private Button buttonLoad;
 	private Button buttonPause;
+	private Button buttonReset;
 	private boolean paused = false;
 
 	private DrawView dv;
@@ -142,6 +143,15 @@ public class MainActivity  extends BlunoLibrary {
 				updatePauseButtonText();
 			}
 		});
+
+        buttonReset = (Button) findViewById(R.id.buttonReset);
+        buttonReset.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                resetGraph();
+                dv.setAngles(0, 0);
+            }
+        });
 
 		graph = (GraphView)findViewById(R.id.graph);
 		graphSeries = new LineGraphSeries<DataPoint>();
@@ -249,7 +259,7 @@ public class MainActivity  extends BlunoLibrary {
 								double pitch = Double.parseDouble(lineData.get(gyroIndex)),
 										yaw = Double.parseDouble(lineData.get(gyroIndex + 2)),
 										roll = Double.parseDouble(lineData.get(gyroIndex + 1));
-								dv.translate(pitch, yaw);
+								dv.rotate(pitch, yaw);
 								dv.invalidate();
 							}
 						}

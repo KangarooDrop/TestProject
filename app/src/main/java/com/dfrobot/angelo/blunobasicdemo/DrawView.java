@@ -16,12 +16,13 @@ import com.jjoe64.graphview.series.DataPoint;
 public class DrawView extends View
 {
     private Paint paint = new Paint();
-    private Line3D line = new Line3D();
+    private Line3D line = new Line3D(200, 0, 0);
 
     public DrawView(Context context, AttributeSet attrs) {
         super(context, attrs);
         paint.setColor(Color.BLACK);
         paint.setStrokeWidth(15);
+
     }
 
     int arrowHeadLen = 40;
@@ -57,17 +58,34 @@ public class DrawView extends View
         line.angleY = angleY;
     }
 
-    public void translate(double deltaXAngle, double deltaYAngle)
+    public void rotate(double deltaXAngle, double deltaYAngle)
     {
         line.angleX += deltaXAngle;
         line.angleY += deltaYAngle;
     }
 
+    public double getAngleX()
+    {
+        return line.angleX;
+    }
+
+    public double getAngleY()
+    {
+        return line.angleY;
+    }
+
     public class Line3D
     {
-        double length = 200;
+        double length = 0;
         double angleX = 0,
                 angleY = 0;
+
+        Line3D(double len, double startAngleX, double startAngleY)
+        {
+            this.length = len;
+            this.angleX = startAngleX;
+            this.angleY = startAngleY;
+        }
 
         private DataPoint getStartPos ()
         {

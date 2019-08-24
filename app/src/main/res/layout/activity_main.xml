@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="138dp"
+        android:layout_marginTop="158dp"
         android:ems="10"
         android:text="Received Data:"
         android:textSize="25sp" />
@@ -37,7 +37,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="51dp"
+        android:layout_marginStart="40dp"
         android:layout_marginTop="630dp"
         android:text="Save" />
 
@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="151dp"
+        android:layout_marginStart="120dp"
         android:layout_marginTop="630dp"
         android:text="Load" />
 
@@ -57,9 +57,19 @@
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
-        android:layout_marginStart="251dp"
+        android:layout_marginStart="200dp"
         android:layout_marginTop="630dp"
         android:text="Pause" />
+
+    <Button
+        android:id="@+id/buttonReset"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="280dp"
+        android:layout_marginTop="630dp"
+        android:text="Reset" />
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"
