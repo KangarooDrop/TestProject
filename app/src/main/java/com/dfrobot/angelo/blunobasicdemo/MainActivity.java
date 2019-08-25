@@ -256,9 +256,9 @@ public class MainActivity  extends BlunoLibrary {
 						int pressureIndex = lineData.indexOf("p") + 1;
 						int gyroIndex = lineData.indexOf("a:") + 1;
 						if (timeStepIndex != 0) {
+                            double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
 							if (pressureIndex != 0)
 							{
-								double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
 								double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
 								DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
 								graphSeries.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
@@ -270,7 +270,7 @@ public class MainActivity  extends BlunoLibrary {
 								double pitch = Double.parseDouble(lineData.get(gyroIndex)),
 										yaw = Double.parseDouble(lineData.get(gyroIndex + 2)),
 										roll = Double.parseDouble(lineData.get(gyroIndex + 1));
-								dv.rotate(pitch, yaw);
+								dv.rotate(pitch * deltaTime, yaw * deltaTime);
 								dv.invalidate();
 							}
 						}
