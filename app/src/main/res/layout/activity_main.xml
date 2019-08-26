@@ -16,7 +16,7 @@
         android:layout_height="wrap_content"        android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="158dp"
+        android:layout_marginTop="80dp"
         android:ems="10"
         android:text="Received Data:"
         android:textSize="25sp" />
@@ -28,7 +28,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="51dp"
-        android:layout_marginTop="60dp"
+        android:layout_marginTop="30dp"
         android:text="Scan" />
 
     <Button
@@ -38,7 +38,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="40dp"
-        android:layout_marginTop="630dp"
+        android:layout_marginTop="500dp"
         android:text="Save" />
 
     <Button
@@ -48,7 +48,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="120dp"
-        android:layout_marginTop="630dp"
+        android:layout_marginTop="500dp"
         android:text="Load" />
 
     <Button
@@ -58,7 +58,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="200dp"
-        android:layout_marginTop="630dp"
+        android:layout_marginTop="500dp"
         android:text="Pause" />
 
     <Button
@@ -68,7 +68,7 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="280dp"
-        android:layout_marginTop="630dp"
+        android:layout_marginTop="500dp"
         android:text="Reset" />
 
     <com.jjoe64.graphview.GraphView
@@ -79,9 +79,9 @@
         android:layout_alignParentStart="true"
         android:layout_alignParentTop="true"
         android:layout_marginStart="20dp"
-        android:layout_marginTop="221dp"
+        android:layout_marginTop="121dp"
         android:layout_marginEnd="8dp"
-        android:layout_marginBottom="-572dp" />
+        android:layout_marginBottom="-472dp" />
 
     <com.dfrobot.angelo.blunobasicdemo.DrawView
         android:id="@+id/drawview"

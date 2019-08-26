@@ -120,18 +120,7 @@ public class MainActivity  extends BlunoLibrary {
 				ArrayList<String> inputBuffer = readFromDataFile();
 				for(int i = 0; i < inputBuffer.size(); i++)
 				{
-					List<String> lineData = Arrays.asList(inputBuffer.get(i).split(" "));
-					if (lineData.size() >= 4) {
-						int timeStepIndex = lineData.indexOf("t:") + 1;
-						int pressureIndex = lineData.indexOf("p") + 1;
-						if (timeStepIndex != 0 && pressureIndex != 0) {
-							double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
-							double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
-							DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
-							graphSeries.appendData(receivedPoint, true, numOfPoints);
-							allGraphSeries.add(receivedPoint);
-						}
-					}
+					addStringToGraph(inputBuffer.get(i));
 				}
 				paused = true;
 				updatePauseButtonText();
@@ -147,14 +136,14 @@ public class MainActivity  extends BlunoLibrary {
 			}
 		});
 
-        buttonReset = (Button) findViewById(R.id.buttonReset);
-        buttonReset.setOnClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                resetGraph();
-                dv.setAngles(0, 0);
-            }
-        });
+		buttonReset = (Button) findViewById(R.id.buttonReset);
+		buttonReset.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				resetGraph();
+				dv.setAngles(0, 0);
+			}
+		});
 
 		graph = (GraphView)findViewById(R.id.graph);
 		graphSeries = new LineGraphSeries<DataPoint>();
@@ -164,13 +153,13 @@ public class MainActivity  extends BlunoLibrary {
 		graph.getViewport().setMinX(0);
 		graph.getViewport().setMaxX(5);
 
-        graph.getViewport().setScrollable(true);
-        graph.getViewport().setOnXAxisBoundsChangedListener(new Viewport.OnXAxisBoundsChangedListener() {
-            @Override
-            public void onXAxisBoundsChanged(double minX, double maxX, Reason reason) {
-                scrollToEndOfGraph = maxX >= graphXValue - 0.2;
-            }
-        });
+		graph.getViewport().setScrollable(true);
+		graph.getViewport().setOnXAxisBoundsChangedListener(new Viewport.OnXAxisBoundsChangedListener() {
+			@Override
+			public void onXAxisBoundsChanged(double minX, double maxX, Reason reason) {
+				scrollToEndOfGraph = maxX >= graphXValue - 0.2;
+			}
+		});
 
 		dv = (DrawView)findViewById(R.id.drawview);
 	}
@@ -243,44 +232,16 @@ public class MainActivity  extends BlunoLibrary {
 		}
 	}
 
-	String wholeLine;
+	String wholeLine = "";
 	@Override
 	public void onSerialReceived(String line)
 	{
 		if (!paused) {
-			try {
-				if (line.contains("t")) {
-					List<String> lineData = Arrays.asList(wholeLine.split(" "));
-					if (lineData.size() >= 4) {
-						int timeStepIndex = lineData.indexOf("t:") + 1;
-						int pressureIndex = lineData.indexOf("p") + 1;
-						int gyroIndex = lineData.indexOf("a:") + 1;
-						if (timeStepIndex != 0) {
-                            double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
-							if (pressureIndex != 0)
-							{
-								double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
-								DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
-								graphSeries.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
-								allGraphSeries.add(receivedPoint);
-								graphXValue += deltaTime;
-							}
-							if (gyroIndex != 0 && gyroIndex + 2 < lineData.size())
-							{
-								double pitch = Double.parseDouble(lineData.get(gyroIndex)),
-										yaw = Double.parseDouble(lineData.get(gyroIndex + 2)),
-										roll = Double.parseDouble(lineData.get(gyroIndex + 1));
-								dv.rotate(pitch * deltaTime, yaw * deltaTime);
-								dv.invalidate();
-							}
-						}
-					}
-					wholeLine = "";
-				}
-				wholeLine += line;
-			} catch (NumberFormatException e) {
-				e.printStackTrace();
+			if (line.contains("t")) {
+				addStringToGraph(wholeLine);
+				wholeLine = "";
 			}
+			wholeLine += line;
 		}
 	}
 
@@ -310,8 +271,9 @@ public class MainActivity  extends BlunoLibrary {
 			BufferedReader br = new BufferedReader(isr);
 			ArrayList<String> logData = new ArrayList<>();
 			String line;
-			while((line = br.readLine()) != null)
+			while((line = br.readLine()) != null) {
 				logData.add(line);
+			}
 			fis.close();
 			Log.w("Writing", "Reading from data log file");
 			return logData;
@@ -322,5 +284,39 @@ public class MainActivity  extends BlunoLibrary {
 			e.printStackTrace();
 		}
 		return new ArrayList<>();
+	}
+
+	private void addStringToGraph(String line)
+	{
+		try {
+			List<String> lineData = Arrays.asList(line.split(" "));
+			if (lineData.size() >= 4) {
+				int timeStepIndex = lineData.indexOf("t:") + 1;
+				int pressureIndex = lineData.indexOf("p:") + 1;
+				int gyroIndex = lineData.indexOf("g:") + 1;
+				if (timeStepIndex != 0) {
+					double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
+					if (pressureIndex != 0)
+					{
+						double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
+						DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
+						graphSeries.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
+						allGraphSeries.add(receivedPoint);
+						graphXValue += deltaTime;
+					}
+					if (gyroIndex != 0 && gyroIndex + 2 < lineData.size())
+					{
+						double pitch = Double.parseDouble(lineData.get(gyroIndex)),
+								yaw = Double.parseDouble(lineData.get(gyroIndex + 2)),
+								roll = Double.parseDouble(lineData.get(gyroIndex + 1));
+						dv.rotate(pitch * deltaTime, yaw * deltaTime);
+						dv.invalidate();
+					}
+				}
+			}
+		}
+		catch (NumberFormatException e) {
+			e.printStackTrace();
+		}
 	}
 }
