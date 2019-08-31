@@ -16,6 +16,7 @@ import com.jjoe64.graphview.series.DataPoint;
 public class DrawView extends View
 {
     private Paint paint = new Paint();
+    private float xPos, yPos;
     private Line3D line = new Line3D(200, 0, 0);
 
     public DrawView(Context context, AttributeSet attrs) {
@@ -25,10 +26,20 @@ public class DrawView extends View
 
     }
 
+    public void translate(double x, double y)
+    {
+        xPos += x;
+        yPos += y;
+    }
+
     int arrowHeadLen = 40;
+    int radius = 32;
     @Override
     public void onDraw(Canvas canvas)
     {
+        canvas.drawOval((100+xPos-radius), (100+yPos+radius), (100+xPos+radius), (100+yPos-radius), paint);
+
+        /*
         DataPoint start = line.getStartPos();
         DataPoint end = line.getEndPos();
         canvas.drawLine((int)(100 + start.getX()), (int)(100 + start.getY()),
@@ -39,7 +50,7 @@ public class DrawView extends View
                 (int)(100+start.getY() + arrowHeadLen * Math.sin(arrowHeadAngle + 5*Math.PI / 6)), paint);
         canvas.drawLine((int)(100 + start.getX()), (int)(100 + start.getY()),
                 (int)(100+start.getX() + arrowHeadLen * Math.cos(arrowHeadAngle - 5*Math.PI / 6)),
-                (int)(100+start.getY() + arrowHeadLen * Math.sin(arrowHeadAngle - 5*Math.PI / 6)), paint);
+                (int)(100+start.getY() + arrowHeadLen * Math.sin(arrowHeadAngle - 5*Math.PI / 6)), paint);*/
 
         /*
         int arrowHeadLen = 40;
