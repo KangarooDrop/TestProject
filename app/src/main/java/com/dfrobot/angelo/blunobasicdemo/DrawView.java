@@ -17,7 +17,7 @@ public class DrawView extends View
 {
     private Paint paint = new Paint();
     private float xPos, yPos;
-    private Line3D line = new Line3D(200, 0, 0);
+    private Paddle paddle = new Paddle(200, 0, 0);
 
     public DrawView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -65,48 +65,37 @@ public class DrawView extends View
 
     public void setAngles(double angleX, double angleY)
     {
-        line.angleX = angleX;
-        line.angleY = angleY;
+        paddle.angleX = angleX;
+        paddle.angleY = angleY;
     }
 
     public void rotate(double deltaXAngle, double deltaYAngle)
     {
-        line.angleX += deltaXAngle;
-        line.angleY += deltaYAngle;
+        paddle.angleX += deltaXAngle;
+        paddle.angleY += deltaYAngle;
     }
 
     public double getAngleX()
     {
-        return line.angleX;
+        return paddle.angleX;
     }
 
     public double getAngleY()
     {
-        return line.angleY;
+        return paddle.angleY;
     }
 
-    public class Line3D
+    public class Paddle
     {
         double length = 0;
         double angleX = 0,
                 angleY = 0;
 
-        Line3D(double len, double startAngleX, double startAngleY)
+        Paddle(double len, double startAngleX, double startAngleY)
         {
             this.length = len;
             this.angleX = startAngleX;
             this.angleY = startAngleY;
-        }
-
-        private DataPoint getStartPos ()
-        {
-            return new DataPoint(length/2 * Math.cos(angleX) * Math.sin(angleY), length / 2 * Math.sin(angleX));
-        }
-
-        private DataPoint getEndPos ()
-        {
-            DataPoint start = getStartPos();
-            return new DataPoint(-start.getX(), -start.getY());
         }
     }
 }

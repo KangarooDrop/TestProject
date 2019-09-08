@@ -58,7 +58,8 @@ public class MainActivity  extends BlunoLibrary {
 
 	//private DrawView dv;
 	private GraphView graph;
-	private ArrayList<LineGraphSeries<DataPoint>> graphSeries;
+	private LineGraphSeries<DataPoint> liveSeries = new LineGraphSeries<>();
+	private LineGraphSeries<DataPoint> fileSeries = new LineGraphSeries<>();
 	private ArrayList<DataPoint> allGraphSeries;
 	private double graphXValue = 0;
 
@@ -100,12 +101,10 @@ public class MainActivity  extends BlunoLibrary {
 
 		serialBegin(115200);
 
-		dv = findViewById(R.id.drawview);
+		//dv = findViewById(R.id.drawview);
 		angleText = findViewById(R.id.angletext);
 
 		graph = findViewById(R.id.graph);
-		graphSeries = new ArrayList<>();
-		graphSeries.add(new LineGraphSeries<DataPoint>());
 		graph.getViewport().setXAxisBoundsManual(true);
 		graph.getViewport().setMinX(0);
 		graph.getViewport().setMaxX(5);
@@ -117,7 +116,6 @@ public class MainActivity  extends BlunoLibrary {
 		List<String> fileNames = getAllFilenames();
 		for(int i = 0; fileNames != null && i < fileNames.size(); i++)
 		{
-			graphSeries.add(new LineGraphSeries<DataPoint>());
 			String fileName = fileNames.get(i);
 			spinnerList.add(fileName.substring(0, fileName.length() - 4));
 		}
@@ -130,23 +128,24 @@ public class MainActivity  extends BlunoLibrary {
 			{
 				scrollToEndOfGraph = (position == 0);
 				graph.removeAllSeries();
-				graph.addSeries(graphSeries.get(position));
 				if (position != 0)
 				{
 					graph.getViewport().setScrollable(true);
 					double startX = graphXValue;
 					graphXValue = 0;
-					graphSeries.get(position).resetData(new DataPoint[] {});
+					fileSeries.resetData(new DataPoint[] {});
+					graph.addSeries(fileSeries);
 					List<String> strData = readFromDataFile(spinnerList.get(position));
 					boolean pastScroll = scrollToEndOfGraph;
 					scrollToEndOfGraph = true;
 					for(String line : strData)
-						addStringToGraph(line, position);
+						addStringToGraph(line, fileSeries);
 					graphXValue = startX;
 					scrollToEndOfGraph = pastScroll;
 				}
 				else {
 					graph.getViewport().setScrollable(false);
+					graph.addSeries(liveSeries);
 					graph.addSeries(recordSeries);
 				}
 			}
@@ -163,8 +162,6 @@ public class MainActivity  extends BlunoLibrary {
 
 			@Override
 			public void onClick(View v) {
-				// TODO Auto-generated method stub
-
 				buttonScanOnClickProcess();										//Alert Dialog for selecting the BLE device
 			}
 		});
@@ -196,7 +193,6 @@ public class MainActivity  extends BlunoLibrary {
 						}
 						if (writeToDataFile(dataToSave, input.getText().toString()))
 						{
-							graphSeries.add(new LineGraphSeries<DataPoint>());
 							if (!spinnerList.contains(input.getText().toString())) {
 								spinnerList.add(input.getText().toString());
 								updateSpinnerList();
@@ -241,8 +237,6 @@ public class MainActivity  extends BlunoLibrary {
 								public void onClick(DialogInterface dialogInterface, int i) {
 									String name = dataSelectionSpinner.getSelectedItem().toString();
 									if (deleteFileFromDir(name)) {
-										int index = spinnerList.indexOf(name);
-										graphSeries.remove(index);
 										spinnerList.remove(name);
 										updateSpinnerList();
 									}
@@ -257,7 +251,50 @@ public class MainActivity  extends BlunoLibrary {
 			}
 		});
 
+		findViewById(R.id.calibratebutton).setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view)
+			{
+				calibrate();
+			}
+		});
+
 		//dv = (DrawView)findViewById(R.id.drawview);
+	}
+
+	private boolean calibrating = false;
+	private double calibTimer = 0;
+
+	private double calibGyroX = 0,
+					calibGyroY = 0,
+					calibGyroZ = 0;
+	private int calibNumGyroPoints = 0;
+
+	private double calibPressure = 0;
+	private int calibNumPressurePoints = 0;
+
+	private double paddleAngleX = 0,
+					paddleAngleY = 0,
+					paddleAngleZ = 0;
+
+	private double averageGyroX = 0,
+					averageGyroY = 0,
+					averageGyroZ = 0,
+
+					averagePressure;
+
+	private void calibrate()
+	{
+		calibrating = true;
+		calibTimer = 0;
+
+		calibGyroX = 0;
+		calibGyroY = 0;
+		calibGyroZ = 0;
+		calibNumGyroPoints = 0;
+
+		calibPressure = 0;
+		calibNumPressurePoints = 0;
 	}
 
 	private void addStringToGraph(String line, LineGraphSeries series)
@@ -271,23 +308,98 @@ public class MainActivity  extends BlunoLibrary {
 				int gyroIndex = lineData.indexOf("g:");
 				if (timeStepIndex != 0) {
 					double deltaTime = Double.parseDouble(lineData.get(timeStepIndex));
+					if (calibrating)
+						calibTimer += deltaTime;
+
 					if (pressureIndex != 0)
 					{
 						double pressureVal = Double.parseDouble(lineData.get(pressureIndex));
-						DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
-						series.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
-						graphXValue += deltaTime;
+						if (!calibrating) {
+							DataPoint receivedPoint = new DataPoint(graphXValue, pressureVal);
+							series.appendData(receivedPoint, scrollToEndOfGraph, numOfPoints);
+							graphXValue += deltaTime;
+						}
+						else
+						{
+							calibPressure += pressureVal;
+							++calibNumPressurePoints;
+						}
 					}
 
-					if (series.equals(graphSeries.get(0)))
+					if (gyroIndex != 0 && gyroIndex + 3 < lineData.size() && accelIndex != 0 && accelIndex + 3 < lineData.size())
 					{
-						if (gyroIndex != 0 && gyroIndex + 3 < lineData.size())
-						{
-							paddleAngle += (Double.parseDouble(lineData.get(gyroIndex+2))-.52)*deltaTime;
-							angleText.setText("Angle: " + paddleAngle);
-							//dv.translate(Double.parseDouble(lineData.get(accelIndex))*deltaTime*6, Double.parseDouble(lineData.get(accelIndex+ 2))*deltaTime*6);
+						double gyroX = Double.parseDouble(lineData.get(gyroIndex + 0)),
+								gyroY = Double.parseDouble(lineData.get(gyroIndex + 1)),
+								gyroZ = Double.parseDouble(lineData.get(gyroIndex + 2));
+						double accX = Double.parseDouble(lineData.get(accelIndex + 0)),
+								accY = Double.parseDouble(lineData.get(accelIndex + 1)),
+								accZ = Double.parseDouble(lineData.get(accelIndex + 2));
+						if (calibrating) {
+							paddleAngleX += (gyroX - averageGyroX) * deltaTime;
+							paddleAngleY += (gyroY - averageGyroY) * deltaTime;
+							paddleAngleZ += (gyroZ - averageGyroZ) * deltaTime;
+							String angleDisplayText = "Angle: (" + Math.floor(100*paddleAngleX)/100.0 + ", " + Math.floor(100*paddleAngleY)/100.0 + ", " + Math.floor(100*paddleAngleZ)/100.0 + ")";
+							angleText.setText(angleDisplayText);
 							dv.invalidate();
+
+
+/*
+							double k = 0.98,
+								gyroConst = 1;
+
+							paddleAngleX += gyroX;
+							paddleAngleY += gyroY;
+							paddleAngleZ += gyroZ;
+
+							double forceMag = Math.sqrt(accX*accX + accY*accY + accZ*accZ);
+							if (forceMag >= -20 && forceMag <= 20)
+							{
+								double accAngleX = Math.atan2(accY, accZ) * gyroConst * deltaTime;
+								paddleAngleX = paddleAngleX * k + accAngleX * (k - 1);
+
+								double accAngleY = Math.atan2(accX, accZ) * gyroConst * deltaTime;
+								paddleAngleY = paddleAngleY * k + accAngleY * (k - 1);
+
+								double accAngleZ = Math.atan2(accX, accY) * gyroConst * deltaTime;
+								paddleAngleZ = paddleAngleZ * k + accAngleZ * (k - 1);
+							}
+
+/*
+							float pitch, roll
+							float k, q [0 >= k, q <= 1]
+							GIVEN: accData[3], gyroData[3]
+
+							pitch += gyroData[0] * gyroConst * dt
+							roll -= gyroData[1] * gyroConst * dt
+
+							int forceMag = Math.sqrt(accData[0]*(accData[0] + (accData[1]*(accData[1] + (accData[2]*(accData[2])
+							if forceMag > -2Gs && < 2Gs:
+								float pitchAcc = atan2(accData[1], accData[2]) * 180 / PI
+								pitch = pitch * k + pitchAcc * (k - 1)
+
+								float rollAcc = atan(accData[0], accData[2]) * 180 / PI
+								roll = roll * q + rollAcc * (q - 1)
+
+							 */
+
 						}
+						else
+						{
+							calibGyroX += gyroX;
+							calibGyroY += gyroY;
+							calibGyroZ += gyroZ;
+							++calibNumGyroPoints;
+						}
+					}
+					if (calibrating && calibTimer >= 3)
+					{
+						averagePressure = calibPressure / calibNumPressurePoints;
+
+						averageGyroX = calibGyroX / calibNumGyroPoints;
+						averageGyroY = calibGyroY / calibNumGyroPoints;
+						averageGyroZ = calibGyroZ / calibNumGyroPoints;
+
+						calibrating = false;
 					}
 				}
 			}
@@ -295,13 +407,6 @@ public class MainActivity  extends BlunoLibrary {
 		catch (NumberFormatException e) {
 			e.printStackTrace();
 		}
-	}
-
-	private double paddleAngle = 0;
-
-	private void addStringToGraph(String line, int index)
-	{
-		addStringToGraph(line, graphSeries.get(index));
 	}
 
 	@Override
@@ -370,7 +475,7 @@ public class MainActivity  extends BlunoLibrary {
 					addStringToGraph(wholeLine, recordSeries);
 					graphXValue = lastTime;
 				}
-				addStringToGraph(wholeLine, 0);
+				addStringToGraph(wholeLine, liveSeries);
 				wholeLine = "";
 			}
 			wholeLine += line;
